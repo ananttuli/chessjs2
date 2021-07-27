@@ -48,7 +48,7 @@ export const PieceFactory = {
 function Pawn(color) {
   const piece = Piece(color, PieceType.PAWN, (row, col, moveNumber, color) => {
     const legalMoves = [];
-    const pawnAdder = color === Color.BLACK ? -1 : 1;
+    const pawnAdder = color === Color.WHITE ? -1 : 1;
 
     legalMoves.push([row + 1 * pawnAdder, col]);
 
@@ -62,6 +62,23 @@ function Pawn(color) {
   return piece;
 }
 
+function generateDiagonals(row, col) {
+  const diagonals = [];
+
+  for (
+    let i = 1;
+    row - i >= 0 && row + i < 8 && col - i >= 0 && col + i < 8;
+    i++
+  ) {
+    diagonals.push([row + i, col + i]);
+    diagonals.push([row - i, col + i]);
+    diagonals.push([row + i, col - i]);
+    diagonals.push([row - i, col - i]);
+  }
+
+  return diagonals;
+}
+
 /**
  *
  * @param {Color} color
@@ -71,19 +88,29 @@ function Bishop(color) {
     color,
     PieceType.BISHOP,
     (row, col, moveNumber, color) => {
-      const legalMoves = [];
-
-      for (let i = row, j = col; i < 8 && j < 8; i++, j++) {
-        legalMoves.push([i, j]);
-      }
-
-      for (let i = row, j = col; i > -1 && j > -1; i--, j--) {
-        legalMoves.push([i, j]);
-      }
-
+      const legalMoves = generateDiagonals(row, col);
+      console.log("bishop legalMoves", legalMoves);
       return legalMoves;
     }
   );
+
+  return piece;
+}
+
+function Rook(color) {
+  const piece = Piece(color, PieceType.ROOK, (row, col, moveNumber, color) => {
+    const legalMoves = [];
+
+    for (let i = row + 1; i < 8; i++) {
+      legalMoves.push([i, j]);
+    }
+
+    for (let i = row - 1; i > -1; i--) {
+      legalMoves.push([i, j]);
+    }
+
+    return legalMoves;
+  });
 
   return piece;
 }

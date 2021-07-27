@@ -21,6 +21,7 @@ export function Board(numRows = 8, numCols = 8) {
      * @param {import("./Game").GameType} game
      */
     render: (game) => {
+      console.log("game render:", game);
       const gamePosition = game.position;
       if (!document.getElementById("#board")) {
         const boardEl = document.createElement("div");
@@ -58,7 +59,7 @@ export function Board(numRows = 8, numCols = 8) {
 
           const pieceEl = isValidCachedPiece
             ? cachedPiece
-            : createPieceEl(piece);
+            : createPieceEl(piece, game);
           pieceEls[piece.uuid] = pieceEl;
 
           squareEl.appendChild(pieceEl);
@@ -74,13 +75,30 @@ export function Board(numRows = 8, numCols = 8) {
  * @param {GameType} game
  * @returns
  */
-function createPieceEl(piece, game) {
+function createPieceEl(piece, game, cb) {
   const pieceEl = document.createElement("DIV");
   pieceEl.classList.add("piece", `${piece.color}${piece.type}`);
-  pieceEl.onClick = (e) => {
+  pieceEl.addEventListener("click", function (e) {
     const allowedMoves = game.getLegalMoves(piece);
+
+    allowedMoves.forEach((move) => {
+      document
+        .getElementById(`sq-${move[0]}_${move[1]}`)
+        .classList.add("candidate");
+    });
+
     console.log("allowed moves: ", allowedMoves);
-  };
+
+    pieceEl.addEventListener("focusout", (e) => {
+      const allowedMoves = game.getLegalMoves(piece);
+
+      allowedMoves.forEach((move) => {
+        document
+          .getElementById(`sq-${move[0]}_${move[1]}`)
+          .classList.remove("candidate");
+      });
+    });
+  });
   return pieceEl;
 }
 

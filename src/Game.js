@@ -96,8 +96,8 @@ export function Game(providedPosition) {
       // Get available squares
       return legalMoves.filter(
         (m) =>
-          position[`${m[0]}${m[1]}`] === -1 ||
-          position[`${m[0]}${m[1]}`]?.color !== piece.color
+          position[`${m[0]}_${m[1]}`] === -1 ||
+          position[`${m[0]}_${m[1]}`]?.color !== piece.color
       );
     },
   };
