@@ -1,13 +1,19 @@
 import { Color, PieceFactory, PieceType } from "./Piece.js";
 
 function getPieceRow(color, row) {
-  return Array(8)
-    .fill(0)
-    .map((_) => PieceFactory[PieceType.BISHOP](color))
-    .reduce((map, piece, col) => {
-      map[`${row}_${col}`] = piece;
-      return map;
-    }, {});
+  return [
+    PieceFactory[PieceType.ROOK](color),
+    PieceFactory[PieceType.BISHOP](color),
+    PieceFactory[PieceType.QUEEN](color),
+    PieceFactory[PieceType.QUEEN](color),
+    PieceFactory[PieceType.KING](color),
+    PieceFactory[PieceType.BISHOP](color),
+    PieceFactory[PieceType.ROOK](color),
+    PieceFactory[PieceType.ROOK](color),
+  ].reduce((map, piece, col) => {
+    map[`${row}_${col}`] = piece;
+    return map;
+  }, {});
 }
 
 function getPawnRow(color, row) {
@@ -59,7 +65,7 @@ export function Game(providedPosition) {
 
   const captured = [];
 
-  const state = { moveNumber: 0 };
+  const state = { moveNumber: 1 };
   return {
     captured,
     position,
@@ -81,9 +87,9 @@ export function Game(providedPosition) {
      * @param {PieceBase} piece
      */
     getLegalMoves: (piece) => {
-      const findPieceKey = Object.entries(position).find(
-        ([k, p]) => piece.uuid === p.uuid
-      );
+      const boardPieces = Object.values(position);
+
+      const findPieceKey = boardPieces.find((p) => piece.uuid === p.uuid);
       const [row, col] = findPieceKey[0].split("_").map((x) => parseInt(x));
 
       const legalMoves = piece.getLegalMoves(
@@ -93,6 +99,8 @@ export function Game(providedPosition) {
         piece.color
       );
 
+      // Calculate line of sight
+      const obstructingPieces = piece.getLineOfSight(position);
       // Get available squares
       return legalMoves.filter(
         (m) =>

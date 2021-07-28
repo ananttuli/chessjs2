@@ -80,7 +80,7 @@ function createPieceEl(piece, game, cb) {
   pieceEl.classList.add("piece", `${piece.color}${piece.type}`);
   pieceEl.addEventListener("click", function (e) {
     const allowedMoves = game.getLegalMoves(piece);
-
+    console.log("allowedMoves:", allowedMoves);
     allowedMoves.forEach((move) => {
       document
         .getElementById(`sq-${move[0]}_${move[1]}`)
