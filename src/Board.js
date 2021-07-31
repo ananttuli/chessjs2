@@ -45,7 +45,7 @@ export function Board(numRows = 8, numCols = 8) {
 
         // Based on initial game position, create piece HTML Elements
         pieceEls = Object.entries(gamePosition).reduce((acc, piece) => {
-          acc[piece.uuid] = createPieceEl(piece, game);
+          acc[piece.uuid] = createPieceEl(piece);
           return acc;
         }, {});
       }
@@ -61,10 +61,20 @@ export function Board(numRows = 8, numCols = 8) {
 
           const pieceEl = isValidCachedPiece
             ? cachedPiece
-            : createPieceEl(piece, game);
+            : createPieceEl(piece);
           pieceEls[piece.uuid] = pieceEl;
 
           squareEl.appendChild(pieceEl);
+        }
+      });
+
+      document.addEventListener("click", (e) => {
+        document.querySelectorAll(".candidate").forEach((el) => {
+          el.classList.remove("candidate");
+        });
+
+        if (e.target.classList.contains("piece")) {
+          pieceClickHandler(e.target, game);
         }
       });
     },
@@ -77,37 +87,34 @@ export function Board(numRows = 8, numCols = 8) {
  * @param {GameType} game
  * @returns
  */
-function createPieceEl(piece, game, cb) {
+function createPieceEl(piece) {
   const pieceEl = document.createElement("DIV");
   pieceEl.classList.add("piece", `${piece.color}${piece.type}`);
-  pieceEl.addEventListener("click", function (e) {
-    const row = parseInt(
-      e.currentTarget.parentElement.getAttribute("data-row")
-    );
-    const col = parseInt(
-      e.currentTarget.parentElement.getAttribute("data-col")
-    );
-    const allowedMoves = game.getLegalMoves(piece, row, col);
-    console.log("allowedMoves:", allowedMoves);
-    // allowedMoves.forEach((move) => {
-    //   document
-    //     .getElementById(`sq-${move[0]}_${move[1]}`)
-    //     .classList.add("candidate");
-    // });
-
-    // console.log("allowed moves: ", allowedMoves);
-
-    // pieceEl.addEventListener("focusout", (e) => {
-    //   const allowedMoves = game.getLegalMovesByPieceType(piece);
-
-    //   allowedMoves.forEach((move) => {
-    //     document
-    //       .getElementById(`sq-${move[0]}_${move[1]}`)
-    //       .classList.remove("candidate");
-    //   });
-    // });
-  });
+  pieceEl.id = `${piece.uuid}`;
   return pieceEl;
+}
+
+/**
+ *
+ * @param {HTMLElement} el
+ * @param {GameType} game
+ * @returns
+ */
+function pieceClickHandler(el, game) {
+  const row = parseInt(el?.parentElement?.getAttribute("data-row") || -1);
+  const col = parseInt(el?.parentElement?.getAttribute("data-col") || -1);
+  if (row === -1 || col === -1) return;
+
+  const piece = game.position[`${row}_${col}`];
+  const allowedMoves = game.getLegalMoves(piece, row, col);
+  console.log("allowedMoves:", allowedMoves);
+
+  Object.keys(allowedMoves).forEach((moveKey) => {
+    const move = moveKey.split("_").map((x) => parseInt(x));
+    document
+      .getElementById(`sq-${move[0]}_${move[1]}`)
+      .classList.add("candidate");
+  });
 }
 
 /**
