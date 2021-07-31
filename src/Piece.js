@@ -12,7 +12,9 @@ export const Color = {
   WHITE: "WHITE",
 };
 
-const getMoveKey = (row, col) => `${row}_${col}`;
+const getMoveKey = (row, col) => {
+  return `${row}_${col}`;
+};
 
 /**
  * @typedef {Object} PieceBase
@@ -65,16 +67,14 @@ function Pawn(color) {
       const legalMoves = {};
       const pawnAdder = color === Color.WHITE ? -1 : 1;
       const oneMoveKey = getMoveKey(row + 1 * pawnAdder, col);
-      const twoMoveKey = getMoveKey(row + 1 * pawnAdder, col);
-
+      const twoMoveKey = getMoveKey(row + 2 * pawnAdder, col);
       !position[oneMoveKey] && (legalMoves[oneMoveKey] = true);
-
+      console.log(position);
       if (moveNumber === 1) {
         !position[oneMoveKey] &&
           !position[twoMoveKey] &&
           (legalMoves[twoMoveKey] = true);
       }
-
       return legalMoves;
     }
   );
@@ -107,7 +107,14 @@ function checkSquareAvailable(row, col, color, position) {
  * @param {GamePosition} position
  * @returns
  */
-function generateDiagonals(row, col, upperLimit = 8, position, color) {
+function generateDiagonals(
+  row,
+  col,
+  upperLimit = 8,
+  lowerLimit = -1,
+  position,
+  color
+) {
   function markLegalMoves(rowObj, colObj, moveMap, ptn) {
     const [row, rowInLimit] = rowObj;
     const [col, colInLimit] = colObj;
@@ -130,9 +137,9 @@ function generateDiagonals(row, col, upperLimit = 8, position, color) {
   for (let i = 1; ; i++) {
     const [colPlus, colMinus, rowPlus, rowMinus] = [
       [col + i, col + i < upperLimit],
-      [col - i, col - i > -1],
+      [col - i, col - i > lowerLimit],
       [row + i, row + i < upperLimit],
-      [row - i, row - i > -1],
+      [row - i, row - i > lowerLimit],
     ];
 
     const terminators = [
@@ -142,7 +149,7 @@ function generateDiagonals(row, col, upperLimit = 8, position, color) {
       !!markLegalMoves(rowMinus, colMinus, diagonals, position),
     ];
 
-    if (terminators.some((x) => !x)) break;
+    if (terminators.some((x) => x)) break;
   }
 
   return diagonals;
@@ -160,6 +167,7 @@ function Bishop(color) {
       const legalMoves = generateDiagonals(
         row,
         col,
+        undefined,
         undefined,
         position,
         color
@@ -180,9 +188,9 @@ function Bishop(color) {
  * @param {GamePosition} position
  * @returns
  */
-function rookType(row, col, limit = 8, position) {
+function rookType(row, col, limit = 8, position, color) {
   const legalMoves = {};
-  const [colTerminated, rowTerminated] = [false, false];
+  let [colTerminated, rowTerminated] = [false, false];
   for (let i = 0; i < limit; i++) {
     if (i === row) continue;
     if (i === col) continue;
@@ -218,7 +226,7 @@ function Rook(color) {
     color,
     PieceType.ROOK,
     (row, col, moveNumber, color, position) => {
-      const legalMoves = rookType(row, col, undefined, position);
+      const legalMoves = rookType(row, col, undefined, position, color);
 
       return legalMoves;
     }
@@ -244,19 +252,35 @@ function Queen(color) {
 }
 
 function King(color) {
-  const piece = Piece(color, PieceType.KING, (row, col, moveNumber, color) => {
-    const checkKingBounds = ([r, c]) =>
-      r <= row + 1 && c <= col + 1 && r >= row - 1 && c >= col - 1;
+  const piece = Piece(
+    color,
+    PieceType.KING,
+    (row, col, moveNumber, color, position) => {
+      const checkKingBounds = ([r, c]) =>
+        r <= row + 1 && c <= col + 1 && r >= row - 1 && c >= col - 1;
 
-    const diagonals = generateDiagonals(row, col, undefined, color).filter(
-      checkKingBounds
-    );
+      const diagonals = Object.entries(
+        generateDiagonals(row, col, undefined, undefined, position, color)
+      )
+        .filter(checkKingBounds)
+        .reduce((acc, moveKey) => {
+          acc[moveKey] = true;
+          return acc;
+        }, {});
 
-    const rookMoves = rookType(row, col).filter(checkKingBounds);
+      const rookMoves = Object.entries(
+        rookType(row, col, undefined, position, color)
+      )
+        .filter(checkKingBounds)
+        .reduce((acc, moveKey) => {
+          acc[moveKey] = true;
+          return acc;
+        }, {});
 
-    const kingMoves = Objectgg.assign({}, diagonals, rookMoves);
-    return kingMoves;
-  });
+      const kingMoves = Object.assign({}, diagonals, rookMoves);
+      return kingMoves;
+    }
+  );
 
   return piece;
 }

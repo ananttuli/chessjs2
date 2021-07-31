@@ -29,11 +29,11 @@ function getPawnRow(color, row) {
 /**
  *
  * @param {number} row
- * @returns {{[key: string]: -1}}
+ * @returns {{[key: string]: false}}
  */
 function getEmptyRow(row) {
   return Array(8)
-    .fill(-1)
+    .fill(false)
     .reduce((map, placeholder, col) => {
       map[`${row}_${col}`] = placeholder;
       return map;

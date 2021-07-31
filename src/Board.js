@@ -53,7 +53,7 @@ export function Board(numRows = 8, numCols = 8) {
       Object.entries(gamePosition).forEach(([k, piece]) => {
         const squareEl = document.getElementById(`sq-${k}`);
         squareEl.innerHTML = "";
-        if (piece === -1) {
+        if (piece === false) {
           squareEl.innerHTML = "";
         } else {
           const cachedPiece = pieceEls[piece.uuid];
@@ -81,8 +81,12 @@ function createPieceEl(piece, game, cb) {
   const pieceEl = document.createElement("DIV");
   pieceEl.classList.add("piece", `${piece.color}${piece.type}`);
   pieceEl.addEventListener("click", function (e) {
-    const row = e.currentTarget.parentElement.getAttribute("data-row");
-    const col = e.currentTarget.parentElement.getAttribute("data-col");
+    const row = parseInt(
+      e.currentTarget.parentElement.getAttribute("data-row")
+    );
+    const col = parseInt(
+      e.currentTarget.parentElement.getAttribute("data-col")
+    );
     const allowedMoves = game.getLegalMoves(piece, row, col);
     console.log("allowedMoves:", allowedMoves);
     // allowedMoves.forEach((move) => {
