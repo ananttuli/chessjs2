@@ -34,6 +34,8 @@ export function Board(numRows = 8, numCols = 8) {
             const square = document.createElement("div");
             square.classList.add("square", getSquareColor(i, j));
             square.id = `sq-${i}_${j}`;
+            square.setAttribute("data-row", i);
+            square.setAttribute("data-col", j);
             rowEl.appendChild(square);
           }
 
@@ -79,25 +81,27 @@ function createPieceEl(piece, game, cb) {
   const pieceEl = document.createElement("DIV");
   pieceEl.classList.add("piece", `${piece.color}${piece.type}`);
   pieceEl.addEventListener("click", function (e) {
-    const allowedMoves = game.getLegalMoves(piece);
+    const row = e.currentTarget.parentElement.getAttribute("data-row");
+    const col = e.currentTarget.parentElement.getAttribute("data-col");
+    const allowedMoves = game.getLegalMoves(piece, row, col);
     console.log("allowedMoves:", allowedMoves);
-    allowedMoves.forEach((move) => {
-      document
-        .getElementById(`sq-${move[0]}_${move[1]}`)
-        .classList.add("candidate");
-    });
+    // allowedMoves.forEach((move) => {
+    //   document
+    //     .getElementById(`sq-${move[0]}_${move[1]}`)
+    //     .classList.add("candidate");
+    // });
 
-    console.log("allowed moves: ", allowedMoves);
+    // console.log("allowed moves: ", allowedMoves);
 
-    pieceEl.addEventListener("focusout", (e) => {
-      const allowedMoves = game.getLegalMoves(piece);
+    // pieceEl.addEventListener("focusout", (e) => {
+    //   const allowedMoves = game.getLegalMovesByPieceType(piece);
 
-      allowedMoves.forEach((move) => {
-        document
-          .getElementById(`sq-${move[0]}_${move[1]}`)
-          .classList.remove("candidate");
-      });
-    });
+    //   allowedMoves.forEach((move) => {
+    //     document
+    //       .getElementById(`sq-${move[0]}_${move[1]}`)
+    //       .classList.remove("candidate");
+    //   });
+    // });
   });
   return pieceEl;
 }

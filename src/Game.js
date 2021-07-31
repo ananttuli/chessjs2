@@ -54,6 +54,11 @@ function getEmptyRows(rows) {
     }, {});
 }
 
+/**
+ *
+ * @param {*} providedPosition
+ * @returns {GameType}
+ */
 export function Game(providedPosition) {
   const position = providedPosition || {
     ...getPieceRow(Color.BLACK, 0),
@@ -71,42 +76,27 @@ export function Game(providedPosition) {
     position,
     state,
     makeMove: (piece, from, to) => {
-      if (position[to] !== -1) {
-        // Capture has taken place
-        // Process capture
-        captured.push({ ...position[to] });
-      }
-
-      position[to] = piece;
-
-      // Empty space from where the move was made
-      position[from] = -1;
+      // if (position[to] !== -1) {
+      //   // Capture has taken place
+      //   // Process capture
+      //   captured.push({ ...position[to] });
+      // }
+      // position[to] = piece;
+      // // Empty space from where the move was made
+      // position[from] = -1;
     },
-    /**
-     *
-     * @param {PieceBase} piece
-     */
-    getLegalMoves: (piece) => {
-      const boardPieces = Object.values(position);
 
-      const findPieceKey = boardPieces.find((p) => piece.uuid === p.uuid);
-      const [row, col] = findPieceKey[0].split("_").map((x) => parseInt(x));
-
-      const legalMoves = piece.getLegalMoves(
+    getLegalMoves: (piece, row, col) => {
+      // piece.getLegalMovesByPieceType;
+      const legalMovesMap = piece.getLegalMoves(
         row,
         col,
         state.moveNumber,
-        piece.color
+        piece.color,
+        position
       );
 
-      // Calculate line of sight
-      const obstructingPieces = piece.getLineOfSight(position);
-      // Get available squares
-      return legalMoves.filter(
-        (m) =>
-          position[`${m[0]}_${m[1]}`] === -1 ||
-          position[`${m[0]}_${m[1]}`]?.color !== piece.color
-      );
+      return legalMovesMap;
     },
   };
 }
@@ -123,6 +113,6 @@ export function Game(providedPosition) {
  * @typedef {Object} GameType
  * @property {GamePosition} position
  * @property {PieceBase[]} captured
- * @property {(piece, from, to) => void} makeMove
- * @property {(piece) => [number, number]} getLegalMoves
+ * @property {(piece: PieceBase, from, to) => void} makeMove
+ * @property {(piece: PieceBase, row: number, col: number) => {[key: string]: boolean}} getLegalMoves
  */

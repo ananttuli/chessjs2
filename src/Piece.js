@@ -12,63 +12,35 @@ export const Color = {
   WHITE: "WHITE",
 };
 
+const getMoveKey = (row, col) => `${row}_${col}`;
+
 /**
  * @typedef {Object} PieceBase
  * @property {PieceType} type
  * @property {Color} color
  * @property {string} uuid
- * @property {(row: number, col: number, moveNumber: number, color: Color) => [number, number][]} getLegalMoves
+ * @property {(row: number, col: number, moveNumber: number, color: Color, position: GamePosition) => {[key: string]: boolean}} getLegalMoves
  */
 
 /**
- *
- * @param {Color} color
- * @param {PieceType} type
- * @param {(row: number, col: number, moveNumber: number, color: Color) => [number, number][]} getLegalMoves
+ * @typedef {import('./Game').GamePosition} GamePosition
+ */
+
+/**
+ * Piece
+ * @param {PieceBase['color']} color
+ * @param {PieceBase['type']} type
+ * @param {PieceBase['getLegalMoves']} getLegalMoves
  * @returns {PieceBase}
  */
 export function Piece(color, type, getLegalMoves) {
-  const movesCache = {};
+  // const movesCache = {};
 
   return {
-    __movesCache: movesCache,
+    // __movesCache: movesCache,
     color,
     type,
-    getLegalMoves: (row, col, moveNumber, color) => {
-      const CACHE_KEY = `${row}_${col}`;
-
-      if (!movesCache[CACHE_KEY]) {
-        const moves = getLegalMoves(row, col, moveNumber, color);
-        movesCache[CACHE_KEY] = moves;
-      }
-
-      return movesCache[CACHE_KEY];
-    },
-    getLegalMovesWithPosition: (row, col, moveNumber, color, position) => {
-      const CACHE_KEY = `${row}_${col}`;
-
-      if (!movesCache[CACHE_KEY]) {
-        const moves = getLegalMoves(row, col, moveNumber, color);
-        movesCache[CACHE_KEY] = moves;
-      }
-
-      const possiblePieceMoves = movesCache[CACHE_KEY];
-      const finalMoves = [];
-      for (let i = 0; i < possiblePieceMoves.length; i++) {
-        const move = possiblePieceMoves[i];
-
-        const pieceOnPosition = position[`${move[0]}_${move[1]}`];
-        if (pieceOnPosition === -1) {
-          finalMoves.push(move);
-          continue;
-        }
-
-        if (pieceOnPosition.color === color) {
-          continue;
-        }
-      }
-      possiblePieceMoves.forEach((move) => {});
-    },
+    getLegalMoves,
     uuid: uuidv4(),
   };
 }
@@ -86,70 +58,93 @@ export const PieceFactory = {
  * @param {Color} color
  */
 function Pawn(color) {
-  const piece = Piece(color, PieceType.PAWN, (row, col, moveNumber, color) => {
-    const legalMoves = [];
-    const pawnAdder = color === Color.WHITE ? -1 : 1;
+  const piece = Piece(
+    color,
+    PieceType.PAWN,
+    (row, col, moveNumber, color, position) => {
+      const legalMoves = {};
+      const pawnAdder = color === Color.WHITE ? -1 : 1;
+      const oneMoveKey = getMoveKey(row + 1 * pawnAdder, col);
+      const twoMoveKey = getMoveKey(row + 1 * pawnAdder, col);
 
-    legalMoves.push([row + 1 * pawnAdder, col]);
+      !position[oneMoveKey] && (legalMoves[oneMoveKey] = true);
 
-    if (moveNumber === 1) {
-      legalMoves.push([row + 2 * pawnAdder, col]);
+      if (moveNumber === 1) {
+        !position[oneMoveKey] &&
+          !position[twoMoveKey] &&
+          (legalMoves[twoMoveKey] = true);
+      }
+
+      return legalMoves;
     }
-
-    return legalMoves;
-  });
+  );
 
   return piece;
 }
 
-function generateDiagonals(row, col, upperLimit = 8) {
-  const diagonals = [];
+/**
+ *
+ * @param {*} row
+ * @param {*} col
+ * @param {*} color
+ * @param {GamePosition} position
+ * @returns {{isLegal: boolean, pathTerminated: boolean}}
+ */
+function checkSquareAvailable(row, col, color, position) {
+  const key = getMoveKey(row, col);
+
+  return {
+    isLegal: !position[key] || position[key].color !== color,
+    pathTerminated: !!position[key],
+  };
+}
+
+/**
+ *
+ * @param {*} row
+ * @param {*} col
+ * @param {*} upperLimit
+ * @param {GamePosition} position
+ * @returns
+ */
+function generateDiagonals(row, col, upperLimit = 8, position, color) {
+  function markLegalMoves(rowObj, colObj, moveMap, ptn) {
+    const [row, rowInLimit] = rowObj;
+    const [col, colInLimit] = colObj;
+    const { isLegal, pathTerminated } = checkSquareAvailable(
+      row,
+      col,
+      color,
+      ptn
+    );
+
+    if (isLegal && rowInLimit && colInLimit) {
+      moveMap[getMoveKey(row, col)] = true;
+    }
+
+    return pathTerminated || !rowInLimit || !colInLimit;
+  }
+
+  const diagonals = {};
 
   for (let i = 1; ; i++) {
     const [colPlus, colMinus, rowPlus, rowMinus] = [
-      col + i,
-      col - i,
-      row + i,
-      row - i,
+      [col + i, col + i < upperLimit],
+      [col - i, col - i > -1],
+      [row + i, row + i < upperLimit],
+      [row - i, row - i > -1],
     ];
 
-    const colInUpperBounds = colPlus < upperLimit;
-    const colInLowerBounds = colMinus > -1;
-    const rowInUpperBounds = rowPlus < upperLimit;
-    const rowInLowerBounds = rowMinus > -1;
+    const terminators = [
+      !!markLegalMoves(rowPlus, colMinus, diagonals, position),
+      !!markLegalMoves(rowPlus, colPlus, diagonals, position),
+      !!markLegalMoves(rowMinus, colPlus, diagonals, position),
+      !!markLegalMoves(rowMinus, colMinus, diagonals, position),
+    ];
 
-    const terminate =
-      !colInUpperBounds &&
-      !colInLowerBounds &&
-      !rowInUpperBounds &&
-      !rowInLowerBounds;
-
-    if (terminate) break;
-
-    {
-      rowInUpperBounds &&
-        colInLowerBounds &&
-        diagonals.push([rowPlus, colMinus]);
-    }
-
-    {
-      rowInUpperBounds &&
-        colInUpperBounds &&
-        diagonals.push([rowPlus, colPlus]);
-    }
-
-    {
-      rowInLowerBounds &&
-        colInUpperBounds &&
-        diagonals.push([rowMinus, colPlus]);
-    }
-
-    {
-      rowInLowerBounds &&
-        colInLowerBounds &&
-        diagonals.push([rowMinus, colMinus]);
-    }
+    if (terminators.some((x) => !x)) break;
   }
+
   return diagonals;
 }
 
@@ -161,8 +156,14 @@ function Bishop(color) {
   const piece = Piece(
     color,
     PieceType.BISHOP,
-    (row, col, moveNumber, color) => {
-      const legalMoves = generateDiagonals(row, col);
+    (row, col, moveNumber, color, position) => {
+      const legalMoves = generateDiagonals(
+        row,
+        col,
+        undefined,
+        position,
+        color
+      );
 
       return legalMoves;
     }
@@ -171,24 +172,57 @@ function Bishop(color) {
   return piece;
 }
 
-function rookType(row, col, limit = 8) {
-  const legalMoves = [];
-
+/**
+ *
+ * @param {number} row
+ * @param {number} col
+ * @param {number | undefined} limit
+ * @param {GamePosition} position
+ * @returns
+ */
+function rookType(row, col, limit = 8, position) {
+  const legalMoves = {};
+  const [colTerminated, rowTerminated] = [false, false];
   for (let i = 0; i < limit; i++) {
     if (i === row) continue;
     if (i === col) continue;
-    legalMoves.push([i, col]);
-    legalMoves.push([row, i]);
+    const colKey = getMoveKey(i, col);
+    const rowKey = getMoveKey(row, i);
+    if (!colTerminated) {
+      if (position[colKey]) {
+        if (position[colKey].color !== color) {
+          legalMoves[colKey] = true;
+          colTerminated = true;
+        } else colTerminated = true;
+      } else {
+        legalMoves[colKey] = true;
+      }
+    }
+
+    if (!rowTerminated) {
+      if (position[rowKey]) {
+        if (position[rowKey].color !== color) {
+          legalMoves[rowKey] = true;
+          rowTerminated = true;
+        } else rowTerminated = true;
+      } else {
+        legalMoves[rowKey] = true;
+      }
+    }
   }
   return legalMoves;
 }
 
 function Rook(color) {
-  const piece = Piece(color, PieceType.ROOK, (row, col, moveNumber, color) => {
-    const legalMoves = rookType(row, col);
+  const piece = Piece(
+    color,
+    PieceType.ROOK,
+    (row, col, moveNumber, color, position) => {
+      const legalMoves = rookType(row, col, undefined, position);
 
-    return legalMoves;
-  });
+      return legalMoves;
+    }
+  );
 
   return piece;
 }
@@ -199,9 +233,11 @@ function Queen(color) {
   const bishopPiece = Bishop(color);
 
   const piece = Piece(color, PieceType.QUEEN, (row, col, moveNumber, color) => {
-    return rookPiece
-      .getLegalMoves(row, col, moveNumber, color)
-      .concat(bishopPiece.getLegalMoves(row, col, moveNumber, color));
+    return Object.assign(
+      {},
+      rookPiece.getLegalMovesByPieceType(row, col, moveNumber, color),
+      bishopPiece.getLegalMovesByPieceType(row, col, moveNumber, color)
+    );
   });
 
   return piece;
@@ -212,11 +248,13 @@ function King(color) {
     const checkKingBounds = ([r, c]) =>
       r <= row + 1 && c <= col + 1 && r >= row - 1 && c >= col - 1;
 
-    const diagonals = generateDiagonals(row, col).filter(checkKingBounds);
+    const diagonals = generateDiagonals(row, col, undefined, color).filter(
+      checkKingBounds
+    );
 
     const rookMoves = rookType(row, col).filter(checkKingBounds);
 
-    const kingMoves = diagonals.concat(rookMoves);
+    const kingMoves = Objectgg.assign({}, diagonals, rookMoves);
     return kingMoves;
   });
 
