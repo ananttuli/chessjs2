@@ -1,10 +1,10 @@
 /**
  * @typedef {Object} Position
- * @property {'1'|'2'|'3'|'4'|'5'|'6'|'7'|'8'} rank
- * @property {'A'|'B'|'C'|'D'|'E'|'F'|'G'} file
+ * @property {string} rank
+ * @property {string} file
  */
 
-export const PositionUtil = {
+export const Position = {
   /**
    *
    * @param {number} row
@@ -14,7 +14,16 @@ export const PositionUtil = {
   indexToPosition: (row, col) => {
     return {
       rank: ["1", "2", "3", "4", "5", "6", "7", "8"][row],
-      file: ["A", "B", "C", "D", "E", "F", "G", "H"][col],
+      file: ["a", "b", "c", "d", "e", "f", "g", "h"][col],
     };
+  },
+
+  positionToKey({ rank, file }) {
+    return `${file}_${rank}`;
+  },
+  keyToPosition(key) {
+    const [file, rank] = key.split("_");
+
+    return { file, rank };
   },
 };

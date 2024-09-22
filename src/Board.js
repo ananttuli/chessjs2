@@ -1,3 +1,4 @@
+import { isEmpty } from "./Game.js";
 import { Color } from "./Piece.js";
 
 function getSquareColor(row, col) {
@@ -8,7 +9,40 @@ function getSquareColor(row, col) {
   return [Color.BLACK, Color.WHITE][col % 2];
 }
 
-export function Board(numRows = 8, numCols = 8) {
+function createBoard(numRows, numCols) {
+  const boardEl = document.createElement("div");
+  boardEl.id = "board";
+  for (let i = 0; i < numRows; i++) {
+    const rowEl = document.createElement("div");
+    rowEl.classList.add("row");
+    for (let j = 0; j < numCols; j++) {
+      const square = document.createElement("div");
+      square.classList.add("square", getSquareColor(i, j));
+      square.id = `sq-${i}_${j}`;
+      square.setAttribute("data-row", i);
+      square.setAttribute("data-col", j);
+
+      // label.style.top = "50%";
+      // label.style.left = "50%";
+      // label.style.right = "50%";
+      //  = {
+      // position: "absolute",
+      // left: "50%",
+      // top: "50%",
+      // bottom: "50%",
+      // right: "50%",/
+      // };
+
+      rowEl.appendChild(square);
+    }
+
+    boardEl.appendChild(rowEl);
+  }
+
+  return boardEl;
+}
+
+export function Board() {
   /**
    * @type {[key: string]: HTMLElement}
    */
@@ -21,62 +55,90 @@ export function Board(numRows = 8, numCols = 8) {
      * @param {import("./Game").GameType} game
      */
     render: (game) => {
-      console.log("game render:", game);
-      const gamePosition = game.position;
+      const { position } = game;
+      console.log("render - position", position);
+
+      const numRows = position.length;
+      const numCols = position[0].length;
+
       if (!document.getElementById("#board")) {
-        const boardEl = document.createElement("div");
-        boardEl.id = "board";
-        for (let i = 0; i < numRows; i++) {
-          const rowEl = document.createElement("div");
-          rowEl.classList.add("row");
+        const boardEl = createBoard(numRows, numCols);
+        console.log({ boardEl });
 
-          for (let j = 0; j < numCols; j++) {
-            const square = document.createElement("div");
-            square.classList.add("square", getSquareColor(i, j));
-            square.id = `sq-${i}_${j}`;
-            square.setAttribute("data-row", i);
-            square.setAttribute("data-col", j);
-            rowEl.appendChild(square);
-          }
-
-          boardEl.appendChild(rowEl);
-        }
         document.body.appendChild(boardEl);
 
         // Based on initial game position, create piece HTML Elements
-        pieceEls = Object.entries(gamePosition).reduce((acc, piece) => {
+        pieceEls = Object.entries(position).reduce((acc, piece) => {
           acc[piece.uuid] = createPieceEl(piece);
           return acc;
         }, {});
       }
 
-      Object.entries(gamePosition).forEach(([k, piece]) => {
-        const squareEl = document.getElementById(`sq-${k}`);
-        squareEl.innerHTML = "";
-        if (piece === false) {
-          squareEl.innerHTML = "";
-        } else {
-          const cachedPiece = pieceEls[piece.uuid];
-          const isValidCachedPiece = !!cachedPiece?.classList;
+      for (let i = 0; i < position.length; i++) {
+        const rank = position[i];
 
-          const pieceEl = isValidCachedPiece
-            ? cachedPiece
-            : createPieceEl(piece);
+        for (let j = 0; j < rank.length; j++) {
+          const piece = rank[j];
+          const square = document.getElementById(`sq-${i}_${j}`);
+
+          square.innerHTML = "";
+
+          square.style.position = "relative";
+          const label = document.createElement("div");
+          label.innerHTML = `<span>${i},${j}</span>`;
+          label.style.position = "absolute";
+          label.style.top = "0%";
+          label.style.right = "5%";
+          label.style.color =
+            piece.color === Color.BLACK
+              ? "white"
+              : piece.color === Color.WHITE
+              ? "black"
+              : "grey";
+          label.style.zIndex = 2;
+          square.appendChild(label);
+
+          if (isEmpty(piece)) {
+            continue;
+          }
+
+          const cachedPiece = pieceEls[piece.uuid];
+
+          const pieceEl = cachedPiece ?? createPieceEl(piece);
+
           pieceEls[piece.uuid] = pieceEl;
 
-          squareEl.appendChild(pieceEl);
+          square.appendChild(pieceEl);
         }
-      });
+      }
 
-      document.addEventListener("click", (e) => {
-        document.querySelectorAll(".candidate").forEach((el) => {
-          el.classList.remove("candidate");
-        });
+      // Object.entries(position).forEach(([k, piece]) => {
+      //   const squareEl = document.getElementById(`sq-${k}`);
+      //   squareEl.innerHTML = "";
+      //   if (piece === false) {
+      //     squareEl.innerHTML = "";
+      //   } else {
+      //     const cachedPiece = pieceEls[piece.uuid];
+      //     const isValidCachedPiece = !!cachedPiece?.classList;
 
-        if (e.target.classList.contains("piece")) {
-          pieceClickHandler(e.target, game);
-        }
-      });
+      //     const pieceEl = isValidCachedPiece
+      //       ? cachedPiece
+      //       : createPieceEl(piece);
+      //     pieceEls[piece.uuid] = pieceEl;
+
+      //     squareEl.appendChild(pieceEl);
+      //   }
+      // });
+
+      // document.addEventListener("click", (e) => {
+      //   document.querySelectorAll(".candidate").forEach((el) => {
+      //     el.classList.remove("candidate");
+      //   });
+
+      //   if (e.target.classList.contains("piece")) {
+      //     pieceClickHandler(e.target, game);
+      //   }
+      // });
     },
   };
 }
@@ -107,6 +169,7 @@ function pieceClickHandler(el, game) {
 
   const piece = game.position[`${row}_${col}`];
   const allowedMoves = game.getLegalMoves(piece, row, col);
+
   console.log("allowedMoves:", allowedMoves);
 
   Object.keys(allowedMoves).forEach((moveKey) => {
