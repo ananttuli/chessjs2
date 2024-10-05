@@ -76,3 +76,7 @@
 .square.candidate {
   outline: 0.5em double gold;
 }
+
+.square.selected {
+  background: blue;
+}

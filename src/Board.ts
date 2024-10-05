@@ -1,4 +1,5 @@
 import { isEmpty, Game, GameUI } from "./Game.js";
+import { MoveMade } from "./Move.js";
 import { Color, Piece, PieceType } from "./Piece.js";
 
 function getSquareColor(row: number, col: number): Color {
@@ -84,6 +85,22 @@ export function Board() {
             } else {
               square.classList.remove("candidate");
             }
+
+            if (ui.currentCoords?.[0] === i && ui.currentCoords?.[1] === j) {
+              square.classList.add("selected");
+            } else {
+              square.classList.remove("selected");
+            }
+
+            square.onclick = () => {
+              const legalMove = ui.findLegalMoveAt(i, j);
+
+              if (legalMove) {
+                game.makeMove(legalMove);
+                // game.state.moves.push(new MoveMade(legalMove, game.state.));
+                this.render(ui);
+              }
+            };
 
             if (!isEmpty(piece)) {
               const pieceEl = pieceEls[piece.uuid] || createPieceEl(piece);

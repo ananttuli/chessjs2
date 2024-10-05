@@ -1,4 +1,4 @@
-import { Move, MoveMade } from "./Move.js";
+import { Move, MoveMade, MoveType } from "./Move.js";
 import { Color, Piece, PieceFactory, PieceType } from "./Piece.js";
 import { Square } from "./Position.js";
 import { tryParseInt } from "./util.js";
@@ -60,9 +60,9 @@ export class GameUI {
 
   constructor(public game: Game) {}
 
-  isCurrentlyHighlighted(row: number, col: number): boolean {
+  getCurrentlySelectedPieceLegalMoves() {
     if (!this.currentSelectedPiece || !this.currentCoords) {
-      return false;
+      return [];
     }
 
     const [selectedX, selectedY] = this.currentCoords;
@@ -74,31 +74,35 @@ export class GameUI {
       this.game.position
     );
 
-    const isOneOfTheLegalMoves = !!legalMoves.find(
-      (move) => move.toX === row && move.toY === col
-    );
+    return legalMoves;
+  }
 
-    console.log(
-      JSON.parse(
-        JSON.stringify({ currentSelectedPiece: this.currentSelectedPiece })
-      ),
-      JSON.parse(JSON.stringify(this.currentCoords)),
-      [row, col],
-      isOneOfTheLegalMoves,
-      JSON.parse(JSON.stringify(legalMoves))
+  findLegalMoveAt(row: number, col: number) {
+    return this.getCurrentlySelectedPieceLegalMoves().find(
+      (m) => m.toX === row && m.toY === col
     );
+  }
 
-    return isOneOfTheLegalMoves;
+  isCurrentlyHighlighted(row: number, col: number): boolean {
+    return !!this.findLegalMoveAt(row, col);
   }
 }
-export class Game {
-  state: {
-    moveNumber: number;
-    turn: string;
-    moves: MoveMade[];
-  } = { moveNumber: 1, turn: Color.WHITE, moves: [] };
 
-  constructor(public position: Position) {}
+interface GameState {
+  moveNumber: number;
+  turn: string;
+  moves: MoveMade[];
+}
+
+export class Game {
+  state: GameState = { moveNumber: 1, turn: Color.WHITE, moves: [] };
+  position: Position;
+
+  constructor(public startingPosition: Position) {
+    // const { state, position } = this.getFreshGameState(startingPosition);
+    this.position = startingPosition;
+    this.state = { moveNumber: 1, turn: Color.WHITE, moves: [] };
+  }
 
   get captured() {
     return this.state.moves.map((m) => m.move.capturedPiece).filter((p) => !!p);
@@ -115,7 +119,77 @@ export class Game {
     this.state.moves.push(
       new MoveMade(move, this.state.turn, this.state.moveNumber)
     );
+
+    this.state.moveNumber += this.state.turn === Color.BLACK ? 1 : 0;
+
+    this.state.turn =
+      this.state.turn === Color.WHITE ? Color.BLACK : Color.WHITE;
+
+    const piece = this.position[move.x][move.y];
+    this.position[move.toX][move.toY] = piece;
+    this.position[move.x][move.y] = undefined;
+
+    // switch (move.moveType) {
+    //   case MoveType.MOVE:
+    //     this.position[move.x][move.y] = undefined;
+    //     break;
+    //   case MoveType.CAPTURE:
+    //     this.position[move.toX][move.toY] = this.position[move.x][move.y];
+    //     break;
+    //   default:
+    //     throw new Error("Unsupported");
+    // }
+
+    // this.rebuildGameStateFromMoves(this.state.moves);
+    // for (let i = 0; i < this.startingPosition.length; i++) {
+    //   for (let j = 0; j < this.startingPosition[i].length; j++) {}
+    // }
   };
+
+  // getFreshGameState(startingPosition: Position): {switch (move.moveType) {
+  //   state: GameState;
+  //   position: Position;
+  // } {
+  //   const newPosition: Position = this.clonePosition(startingPosition);
+  //   return {
+  //     state: { moveNumber: 1, turn: Color.WHITE, moves: [] },
+  //     position: newPosition,
+  //   };
+  // }
+
+  // rebuildGameStateFromMoves(moves: MoveMade[]) {
+  //   const { state, position } = this.getFreshGameState(this.startingPosition);
+
+  //   const newPosition = position;
+
+  //   for (const moveMade of moves) {
+  //     const { move } = moveMade;
+
+  //     switch (move.moveType) {
+  //       case MoveType.MOVE:
+  //         const piece = newPosition[move.x][move.y];
+  //         newPosition[move.toX][move.toY] = piece;
+  //         newPosition[move.x][move.y] = undefined;
+
+  //         state.moveNumber += 0.5;
+  //         state.turn = state.turn === Color.WHITE ? Color.BLACK : Color.WHITE;
+
+  //         state.moves.push(moveMade);
+  //       case MoveType.CAPTURE:
+  //       default:
+  //         throw new Error("Unsupported");
+  //     }
+  //   }
+
+  //   state.moveNumber = Math.floor(state.moveNumber);
+  //   this.position = newPosition;
+  //   this.state = state;
+  // }
+
+  // clonePosition(position: Position): Position {
+
+  //   return JSON.parse(JSON.stringify(position));
+  // }
 
   getLegalMoves = (piece: Piece, row: number, col: number) => {
     const legalMoves = piece.getLegalMoves?.(
