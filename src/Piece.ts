@@ -59,17 +59,12 @@ export interface Piece {
 
 // Factory for creating different types of pieces
 export const PieceFactory: Record<PieceType, (color: Color) => Piece> = {
-  // [PieceType.N]: Knight,
-  // [PieceType.R]: Rook,
-  // [PieceType.B]: Bishop,
-  // [PieceType.K]: King,
-  // [PieceType.Q]: Queen,
-  [PieceType.N]: (color: Color) => new Pawn(color),
-  [PieceType.R]: (color: Color) => new Pawn(color),
-  [PieceType.B]: (color: Color) => new Bishop(color),
-  [PieceType.K]: (color: Color) => new Pawn(color),
-  [PieceType.Q]: (color: Color) => new Pawn(color),
   [PieceType.P]: (color: Color) => new Pawn(color),
+  [PieceType.B]: (color: Color) => new Bishop(color),
+  [PieceType.Q]: (color: Color) => new Queen(color),
+  [PieceType.R]: (color: Color) => new Rook(color),
+  [PieceType.K]: (color: Color) => new King(color),
+  [PieceType.N]: (color: Color) => new Knight(color),
 };
 
 // Directions for movement
@@ -313,8 +308,7 @@ class Bishop implements Piece {
         this,
         [row, col],
         position,
-        dir,
-        moveNumber === 1 ? 2 : 1
+        dir
       )
     );
 
@@ -331,6 +325,231 @@ class Bishop implements Piece {
       .filter((m) => !!m);
 
     return moves.concat(captureMoves);
+  }
+}
+
+class Queen implements Piece {
+  public uuid: string = uuidv4();
+  public type = PieceType.Q;
+
+  constructor(public color: Color) {}
+
+  getLegalMoves(
+    row: number,
+    col: number,
+    moveNumber: number,
+    color: Color,
+    position: Position
+  ) {
+    const isWhite = color === Color.WHITE;
+
+    const moveDirections = [
+      Direction.upLeft,
+      Direction.downLeft,
+      Direction.upRight,
+      Direction.downRight,
+      Direction.up,
+      Direction.down,
+      Direction.left,
+      Direction.right,
+    ];
+
+    const captureDirections = moveDirections;
+
+    const moves = moveDirections.flatMap((dir): Move[] =>
+      findAllMovesInDirectionFromStartingPosition(
+        this,
+        [row, col],
+        position,
+        dir
+      )
+    );
+
+    const captureMoves = captureDirections
+      .map((dir): Move | undefined =>
+        findCapturablePiecesInDirection(
+          this,
+          [row, col],
+          position,
+          dir,
+          isWhite ? Color.BLACK : Color.WHITE
+        )
+      )
+      .filter((m) => !!m);
+
+    return moves.concat(captureMoves);
+  }
+}
+
+class Rook implements Piece {
+  public uuid: string = uuidv4();
+  public type = PieceType.R;
+
+  constructor(public color: Color) {}
+
+  getLegalMoves(
+    row: number,
+    col: number,
+    moveNumber: number,
+    color: Color,
+    position: Position
+  ) {
+    const isWhite = color === Color.WHITE;
+
+    const moveDirections = [
+      Direction.up,
+      Direction.down,
+      Direction.left,
+      Direction.right,
+    ];
+
+    const captureDirections = moveDirections;
+
+    const moves = moveDirections.flatMap((dir): Move[] =>
+      findAllMovesInDirectionFromStartingPosition(
+        this,
+        [row, col],
+        position,
+        dir
+      )
+    );
+
+    const captureMoves = captureDirections
+      .map((dir): Move | undefined =>
+        findCapturablePiecesInDirection(
+          this,
+          [row, col],
+          position,
+          dir,
+          isWhite ? Color.BLACK : Color.WHITE
+        )
+      )
+      .filter((m) => !!m);
+
+    return moves.concat(captureMoves);
+  }
+}
+
+class King implements Piece {
+  public uuid: string = uuidv4();
+  public type = PieceType.K;
+
+  constructor(public color: Color) {}
+
+  getLegalMoves(
+    row: number,
+    col: number,
+    moveNumber: number,
+    color: Color,
+    position: Position
+  ) {
+    const isWhite = color === Color.WHITE;
+
+    const moveDirections = [
+      Direction.upLeft,
+      Direction.downLeft,
+      Direction.upRight,
+      Direction.downRight,
+      Direction.up,
+      Direction.down,
+      Direction.left,
+      Direction.right,
+    ];
+
+    const captureDirections = moveDirections;
+
+    const moves = moveDirections.flatMap((dir): Move[] =>
+      findAllMovesInDirectionFromStartingPosition(
+        this,
+        [row, col],
+        position,
+        dir,
+        1
+      )
+    );
+
+    const captureMoves = captureDirections
+      .map((dir): Move | undefined =>
+        findCapturablePiecesInDirection(
+          this,
+          [row, col],
+          position,
+          dir,
+          isWhite ? Color.BLACK : Color.WHITE,
+          1
+        )
+      )
+      .filter((m) => !!m);
+
+    return moves.concat(captureMoves);
+  }
+}
+
+const KNIGHT_RELATIVE_MOVEMENTS = [
+  [-2, 1],
+  [-2, -1],
+  [2, 1],
+  [2, -1],
+  [-1, -2],
+  [-1, 2],
+  [1, -2],
+  [1, 2],
+];
+
+class Knight implements Piece {
+  public uuid: string = uuidv4();
+  public type = PieceType.N;
+
+  constructor(public color: Color) {}
+
+  getLegalMoves(
+    row: number,
+    col: number,
+    moveNumber: number,
+    color: Color,
+    position: Position
+  ) {
+    const isWhite = color === Color.WHITE;
+    const capturableColor = isWhite ? Color.BLACK : Color.WHITE;
+
+    const allCoords: [number, number][] = KNIGHT_RELATIVE_MOVEMENTS.map(
+      ([dr, dc]) => [row + dr, col + dc]
+    );
+
+    const legalMoves = allCoords
+      .map((sq) => {
+        if (isWithinPositionLimits(sq, position)) {
+          const pieceAtNewPos = position[sq[0]][sq[1]];
+
+          if (isEmpty(pieceAtNewPos)) {
+            return new Move({
+              moveType: MoveType.MOVE,
+              x: row,
+              y: col,
+              toX: sq[0],
+              toY: sq[1],
+              piece: this,
+            });
+          }
+
+          if (pieceAtNewPos.color === capturableColor) {
+            return new Move({
+              moveType: MoveType.CAPTURE,
+              x: row,
+              y: col,
+              toX: sq[0],
+              toY: sq[1],
+              piece: this,
+              capturedPiece: pieceAtNewPos,
+            });
+          }
+
+          return undefined;
+        }
+      })
+      .filter((x) => !!x);
+
+    return legalMoves;
   }
 }
 
