@@ -1,17 +1,18 @@
 import { Board } from "./Board.js";
-import { buildStartingPosition, Game } from "./Game.js";
+import { buildStartingPosition, Game, GameUI } from "./Game.js";
 
 function main() {
   // Init game
   const startingPosition = buildStartingPosition();
 
-  const game = Game(startingPosition);
+  const game = new Game(startingPosition);
+  const gameUI = new GameUI(game);
 
   const r = 3,
     c = 4;
 
   const board = Board();
-  board.render(game);
+  board.render(gameUI);
 }
 
 main();

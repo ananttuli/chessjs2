@@ -28,7 +28,6 @@ export interface Piece {
     row: number,
     col: number,
     moveNumber: number,
-    color: Color,
     position: Position
   ) => Move[];
 }
@@ -134,9 +133,6 @@ function findCapturablePiecesInDirection(
   captureColor: Color,
   maxJumps?: number
 ): Move | undefined {
-  console.log({
-    arguments,
-  });
   let row = startRow,
     col = startCol;
   let numJumps = 0;
@@ -190,7 +186,7 @@ function findAllMovesInDirectionFromStartingPosition(
     const potentialMove = nextSquareInDirection[direction]([row, col]);
     const withinMaxJumps = maxJumps == null ? true : numJumps < maxJumps;
 
-    if (!isWithinPositionLimits(potentialMove, position) && withinMaxJumps) {
+    if (!isWithinPositionLimits(potentialMove, position) || !withinMaxJumps) {
       break;
     }
 
@@ -249,10 +245,9 @@ class Pawn implements Piece {
     row: number,
     col: number,
     moveNumber: number,
-    color: Color,
     position: Position
   ) {
-    const isWhite = color === Color.WHITE;
+    const isWhite = this.color === Color.WHITE;
 
     const moves = findAllMovesInDirectionFromStartingPosition(
       this,
@@ -289,10 +284,9 @@ class Bishop implements Piece {
     row: number,
     col: number,
     moveNumber: number,
-    color: Color,
     position: Position
   ) {
-    const isWhite = color === Color.WHITE;
+    const isWhite = this.color === Color.WHITE;
 
     const moveDirections = [
       Direction.upLeft,
@@ -338,10 +332,9 @@ class Queen implements Piece {
     row: number,
     col: number,
     moveNumber: number,
-    color: Color,
     position: Position
   ) {
-    const isWhite = color === Color.WHITE;
+    const isWhite = this.color === Color.WHITE;
 
     const moveDirections = [
       Direction.upLeft,
@@ -391,10 +384,9 @@ class Rook implements Piece {
     row: number,
     col: number,
     moveNumber: number,
-    color: Color,
     position: Position
   ) {
-    const isWhite = color === Color.WHITE;
+    const isWhite = this.color === Color.WHITE;
 
     const moveDirections = [
       Direction.up,
@@ -440,10 +432,9 @@ class King implements Piece {
     row: number,
     col: number,
     moveNumber: number,
-    color: Color,
     position: Position
   ) {
-    const isWhite = color === Color.WHITE;
+    const isWhite = this.color === Color.WHITE;
 
     const moveDirections = [
       Direction.upLeft,
@@ -506,10 +497,9 @@ class Knight implements Piece {
     row: number,
     col: number,
     moveNumber: number,
-    color: Color,
     position: Position
   ) {
-    const isWhite = color === Color.WHITE;
+    const isWhite = this.color === Color.WHITE;
     const capturableColor = isWhite ? Color.BLACK : Color.WHITE;
 
     const allCoords: [number, number][] = KNIGHT_RELATIVE_MOVEMENTS.map(
