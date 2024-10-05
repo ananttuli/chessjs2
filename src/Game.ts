@@ -1,33 +1,15 @@
-import { Move } from "./Move.js";
+import { Move, MoveMade } from "./Move.js";
 import { Color, Piece, PieceFactory, PieceType } from "./Piece.js";
 import { Square } from "./Position.js";
 import { tryParseInt } from "./util.js";
 
-// Define an empty piece
-const EmptyPiece: Piece = {} as Piece;
-
-// Piece interface
-// interface Piece {
-//   color?: Color;
-//   type?: string;
-//   getLegalMoves?: (
-//     row: number,
-//     col: number,
-//     moveNumber: number,
-//     color: string,
-//     position: Piece[][]
-//   ) => any;
-//   uuid?: string;
-// }
-
-// Check if a piece is empty
-export function isEmpty(piece: Piece): boolean {
-  return piece === EmptyPiece;
+export function isEmpty(
+  maybePiece: Piece | undefined
+): maybePiece is undefined {
+  return maybePiece == null;
 }
 
-// Define the types for moves
-
-export type Position = Piece[][];
+export type Position = (Piece | undefined)[][];
 
 /**
  * Builds the starting position of the game based on FEN notation
@@ -36,18 +18,18 @@ export type Position = Piece[][];
 export function buildStartingPosition(
   fenNotation = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 ): Position {
-  const positionArr: Piece[][] = [];
+  const positionArr: Position = [];
   const rankConfigs = fenNotation.split("/");
 
   for (let i = 0; i < rankConfigs.length; i++) {
     const { error, result } = tryParseInt(rankConfigs[i]);
 
-    const pieceObjects: Piece[] = [];
+    const pieceObjects: (Piece | undefined)[] = [];
 
     if (!error && result != null) {
       // Handle empty rows
       for (let j = 0; j < result; j++) {
-        pieceObjects.push(EmptyPiece);
+        pieceObjects.push(undefined);
       }
     } else {
       // Non-empty rows
@@ -74,28 +56,34 @@ export function buildStartingPosition(
 
 // Define the game state and logic
 export interface GameType {
-  captured: Piece[];
+  captured: () => Piece[];
   position: Position;
   state: {
     moveNumber: number;
     turn: string;
-    moves: Move[];
+    moves: MoveMade[];
   };
-  makeMove: () => void;
+  makeMove: (move: Move) => void;
   getLegalMoves: (piece: Piece, row: number, col: number) => any;
 }
 
 export function Game(position: Position): GameType {
-  const captured: Piece[] = [];
-
-  const state = { moveNumber: 1, turn: Color.WHITE, moves: [] as Move[] };
+  const state = { moveNumber: 1, turn: Color.WHITE, moves: [] as MoveMade[] };
 
   return {
-    captured,
+    captured: () =>
+      state.moves.map((m) => m.move.capturedPiece).filter((p) => !!p),
     position,
     state,
-    makeMove() {
-      // Implementation for makeMove can be added here
+    makeMove(move: Move) {
+      if (move.piece.color === Color.BLACK) {
+        state.moveNumber++;
+        state.turn = Color.WHITE;
+      } else {
+        state.turn = Color.BLACK;
+      }
+
+      state.moves.push(new MoveMade(move, state.turn, state.moveNumber));
     },
     getLegalMoves: (piece: Piece, row: number, col: number) => {
       const legalMoves = piece.getLegalMoves?.(
@@ -106,7 +94,6 @@ export function Game(position: Position): GameType {
         position
       );
 
-      console.log({ legalMoves, piece });
       return legalMoves;
     },
   };

@@ -58,7 +58,12 @@ export function Board() {
             label.style.position = "absolute";
             label.style.top = "0%";
             label.style.right = "5%";
-            label.style.color = piece.color === Color.BLACK ? "white" : "black";
+            label.style.color = !piece
+              ? "green"
+              : piece?.color === Color.BLACK
+              ? "white"
+              : "black";
+
             square.appendChild(label);
 
             if (!isEmpty(piece)) {
