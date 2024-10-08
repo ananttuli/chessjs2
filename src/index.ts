@@ -6,10 +6,9 @@ function main() {
   const startingPosition = buildStartingPosition();
 
   const game = new Game(startingPosition);
+  console.log({ game });
   const gameUI = new GameUI(game);
-
-  const r = 3,
-    c = 4;
+  console.log({ gameUI });
 
   const board = Board();
   board.render(gameUI);

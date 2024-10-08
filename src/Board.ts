@@ -86,20 +86,21 @@ export function Board() {
               square.classList.remove("candidate");
             }
 
-            if (ui.currentCoords?.[0] === i && ui.currentCoords?.[1] === j) {
+            if (
+              ui.selectedPiece?.sq[0] === i &&
+              ui.selectedPiece?.sq[1] === j
+            ) {
               square.classList.add("selected");
             } else {
               square.classList.remove("selected");
             }
 
-            square.onclick = () => {
-              const legalMove = ui.findLegalMoveAt(i, j);
+            square.onclick = (squareClickEvent) => {
+              squareClickEvent.stopPropagation();
 
-              if (legalMove) {
-                game.makeMove(legalMove);
-                // game.state.moves.push(new MoveMade(legalMove, game.state.));
-                this.render(ui);
-              }
+              handleClick(i, j, ui);
+
+              this.render(ui);
             };
 
             if (!isEmpty(piece)) {
@@ -109,16 +110,10 @@ export function Board() {
               pieceEl.onclick = null;
               square.appendChild(pieceEl);
 
-              pieceEl.onclick = () => {
-                const currentPiece = position[i][j];
+              pieceEl.onclick = (e) => {
+                e.stopPropagation();
 
-                if (ui.currentSelectedPiece?.uuid === currentPiece?.uuid) {
-                  ui.currentSelectedPiece = undefined;
-                  ui.currentCoords = undefined;
-                } else {
-                  ui.currentSelectedPiece = currentPiece;
-                  ui.currentCoords = [i, j];
-                }
+                handleClick(i, j, ui);
 
                 this.render(ui);
               };
@@ -128,6 +123,52 @@ export function Board() {
       }
     },
   };
+}
+
+function handleClick(x: number, y: number, ui: GameUI) {
+  const position = ui.game.position;
+
+  const currentPiece = position[x][y];
+
+  // 1. Click on empty square without clicking anything else
+  // 2. Click on piece of turn color
+  //  2.1 then click on empty square -> Move
+  //  2.2 then click on piece of opposite color -> capture
+  // 3. Click on piece not of turn color, nothing happens
+
+  const currentClickOnEmpty = currentPiece == null;
+  const { selectedPiece: previouslySelectedPiece, game } = ui;
+
+  const isCurrentPieceTurn = currentPiece?.color === game.turn;
+  const legalMove = ui.findLegalMoveAt(x, y);
+
+  if (currentClickOnEmpty) {
+    // current click on empty
+    if (previouslySelectedPiece) {
+      if (previouslySelectedPiece.piece.color === game.turn && legalMove) {
+        game.makeMove(legalMove);
+      }
+    }
+
+    ui.clearSelection();
+  } else {
+    // current click on piece
+    if (previouslySelectedPiece) {
+      // capture
+      if (legalMove && previouslySelectedPiece.piece.color === game.turn) {
+        game.makeMove(legalMove);
+      }
+
+      ui.clearSelection();
+    } else {
+      // select piece
+      if (currentPiece.color === game.turn) {
+        ui.selectedPiece = { piece: currentPiece, sq: [x, y] };
+      } else {
+        ui.clearSelection();
+      }
+    }
+  }
 }
 
 function createPieceEl(piece: Piece): HTMLElement {

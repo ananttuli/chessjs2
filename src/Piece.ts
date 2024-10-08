@@ -1,4 +1,4 @@
-import { isEmpty, Position } from "./Game.js";
+import { Game, isEmpty, Position } from "./Game.js";
 import { Move, MoveType } from "./Move.js";
 
 export enum PieceType {
@@ -28,7 +28,7 @@ export interface Piece {
     row: number,
     col: number,
     moveNumber: number,
-    position: Position
+    game: Game
   ) => Move[];
 }
 
@@ -196,8 +196,8 @@ function findAllMovesInDirectionFromStartingPosition(
       possibleMoves.push(
         new Move({
           moveType: MoveType.MOVE,
-          x: row,
-          y: col,
+          x: startRow,
+          y: startCol,
           toX: potentialMove[0],
           toY: potentialMove[1],
           piece,
@@ -213,40 +213,20 @@ function findAllMovesInDirectionFromStartingPosition(
 
   return possibleMoves;
 }
-
-// Find all possible moves from a starting position
-// function findAllMovesFromStartingPosition(
-//   [startingRow, startingCol]: [number, number],
-//   dirMap: Record<DirectionType, boolean>,
-//   position: any[][],
-//   maxJumps?: number
-// ) {
-//   return Object.entries(dirMap).map(([dir]) => {
-//     const { pieceFound, possibleMoves } =
-//       findAllMovesInDirectionFromStartingPosition(
-//         [startingRow, startingCol],
-//         position,
-//         dir as DirectionType,
-//         maxJumps
-//       );
-//     return { [dir]: { possibleMoves, pieceFound } };
-//   });
-// }
-
-// Function to create a Pawn
-
 class Pawn implements Piece {
   public uuid: string = uuidv4();
   public type = PieceType.P;
 
   constructor(public color: Color) {}
 
-  getLegalMoves(
-    row: number,
-    col: number,
-    moveNumber: number,
-    position: Position
-  ) {
+  getLegalMoves(row: number, col: number, moveNumber: number, game: Game) {
+    const { position } = game;
+
+    const movedBefore = !!game.state.moves.find(
+      (m) => m.move.x === row && m.move.y === col
+    );
+
+    console.log({ movedBefore });
     const isWhite = this.color === Color.WHITE;
 
     const moves = findAllMovesInDirectionFromStartingPosition(
@@ -254,10 +234,14 @@ class Pawn implements Piece {
       [row, col],
       position,
       isWhite ? Direction.up : Direction.down,
-      moveNumber === 1 ? 2 : 1
+      movedBefore ? 1 : 2
     );
 
-    const captureMoves: Move[] = [Direction.upLeft, Direction.upRight]
+    const captureMoves: Move[] = (
+      isWhite
+        ? [Direction.upLeft, Direction.upRight]
+        : [Direction.downLeft, Direction.downRight]
+    )
       .map((dir) =>
         findCapturablePiecesInDirection(
           this,
@@ -280,12 +264,9 @@ class Bishop implements Piece {
 
   constructor(public color: Color) {}
 
-  getLegalMoves(
-    row: number,
-    col: number,
-    moveNumber: number,
-    position: Position
-  ) {
+  getLegalMoves(row: number, col: number, moveNumber: number, game: Game) {
+    const { position } = game;
+
     const isWhite = this.color === Color.WHITE;
 
     const moveDirections = [
@@ -328,12 +309,9 @@ class Queen implements Piece {
 
   constructor(public color: Color) {}
 
-  getLegalMoves(
-    row: number,
-    col: number,
-    moveNumber: number,
-    position: Position
-  ) {
+  getLegalMoves(row: number, col: number, moveNumber: number, game: Game) {
+    const { position } = game;
+
     const isWhite = this.color === Color.WHITE;
 
     const moveDirections = [
@@ -380,12 +358,9 @@ class Rook implements Piece {
 
   constructor(public color: Color) {}
 
-  getLegalMoves(
-    row: number,
-    col: number,
-    moveNumber: number,
-    position: Position
-  ) {
+  getLegalMoves(row: number, col: number, moveNumber: number, game: Game) {
+    const { position } = game;
+
     const isWhite = this.color === Color.WHITE;
 
     const moveDirections = [
@@ -428,12 +403,9 @@ class King implements Piece {
 
   constructor(public color: Color) {}
 
-  getLegalMoves(
-    row: number,
-    col: number,
-    moveNumber: number,
-    position: Position
-  ) {
+  getLegalMoves(row: number, col: number, moveNumber: number, game: Game) {
+    const { position } = game;
+
     const isWhite = this.color === Color.WHITE;
 
     const moveDirections = [
@@ -493,12 +465,9 @@ class Knight implements Piece {
 
   constructor(public color: Color) {}
 
-  getLegalMoves(
-    row: number,
-    col: number,
-    moveNumber: number,
-    position: Position
-  ) {
+  getLegalMoves(row: number, col: number, moveNumber: number, game: Game) {
+    const { position } = game;
+
     const isWhite = this.color === Color.WHITE;
     const capturableColor = isWhite ? Color.BLACK : Color.WHITE;
 

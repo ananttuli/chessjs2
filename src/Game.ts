@@ -55,23 +55,32 @@ export function buildStartingPosition(
 }
 
 export class GameUI {
-  currentSelectedPiece?: Piece;
-  currentCoords?: [number, number];
+  // currentSelectedPiece?: Piece;
+  // currentCoords?: [number, number];
+
+  selectedPiece: { piece: Piece; sq: [number, number] } | undefined;
 
   constructor(public game: Game) {}
 
+  clearSelection() {
+    this.selectedPiece = undefined;
+
+    // this.currentCoords = undefined;
+    // this.currentSelectedPiece = undefined;
+  }
+
   getCurrentlySelectedPieceLegalMoves() {
-    if (!this.currentSelectedPiece || !this.currentCoords) {
+    if (!this.selectedPiece) {
       return [];
     }
 
-    const [selectedX, selectedY] = this.currentCoords;
+    const [selectedX, selectedY] = this.selectedPiece.sq;
 
-    const legalMoves = this.currentSelectedPiece.getLegalMoves(
+    const legalMoves = this.selectedPiece.piece.getLegalMoves(
       selectedX,
       selectedY,
-      this.game.state.moveNumber,
-      this.game.position
+      this.game.moveNumber,
+      this.game
     );
 
     return legalMoves;
@@ -89,19 +98,30 @@ export class GameUI {
 }
 
 interface GameState {
-  moveNumber: number;
-  turn: string;
+  // moveNumber: number;
+  // turn: string;
   moves: MoveMade[];
 }
 
 export class Game {
-  state: GameState = { moveNumber: 1, turn: Color.WHITE, moves: [] };
-  position: Position;
+  state: GameState = { moves: [] };
+  position: Position = buildStartingPosition();
 
-  constructor(public startingPosition: Position) {
+  constructor(public startingPosition?: Position, moves?: MoveMade[]) {
     // const { state, position } = this.getFreshGameState(startingPosition);
-    this.position = startingPosition;
-    this.state = { moveNumber: 1, turn: Color.WHITE, moves: [] };
+    // this.init(startingPosition);
+    // this.init(startingPosition)
+    // this.position = JSON.parse(JSON.stringify(startingPosition));
+  }
+
+  get moveNumber() {
+    return this.state.moves.length > 0
+      ? Math.floor(this.state.moves.length / 2) + 1
+      : 1;
+  }
+
+  get turn() {
+    return this.state.moves.length % 2 === 0 ? Color.WHITE : Color.BLACK;
   }
 
   get captured() {
@@ -109,21 +129,7 @@ export class Game {
   }
 
   makeMove = (move: Move) => {
-    if (move.piece.color === Color.BLACK) {
-      this.state.moveNumber++;
-      this.state.turn = Color.WHITE;
-    } else {
-      this.state.turn = Color.BLACK;
-    }
-
-    this.state.moves.push(
-      new MoveMade(move, this.state.turn, this.state.moveNumber)
-    );
-
-    this.state.moveNumber += this.state.turn === Color.BLACK ? 1 : 0;
-
-    this.state.turn =
-      this.state.turn === Color.WHITE ? Color.BLACK : Color.WHITE;
+    this.state.moves.push(new MoveMade(move, this.turn, this.moveNumber));
 
     const piece = this.position[move.x][move.y];
     this.position[move.toX][move.toY] = piece;
@@ -192,12 +198,7 @@ export class Game {
   // }
 
   getLegalMoves = (piece: Piece, row: number, col: number) => {
-    const legalMoves = piece.getLegalMoves?.(
-      row,
-      col,
-      this.state.moveNumber,
-      this.position
-    );
+    const legalMoves = piece.getLegalMoves?.(row, col, this.moveNumber, this);
 
     return legalMoves;
   };
