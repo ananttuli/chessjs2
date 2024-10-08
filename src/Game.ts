@@ -134,22 +134,6 @@ export class Game {
     const piece = this.position[move.x][move.y];
     this.position[move.toX][move.toY] = piece;
     this.position[move.x][move.y] = undefined;
-
-    // switch (move.moveType) {
-    //   case MoveType.MOVE:
-    //     this.position[move.x][move.y] = undefined;
-    //     break;
-    //   case MoveType.CAPTURE:
-    //     this.position[move.toX][move.toY] = this.position[move.x][move.y];
-    //     break;
-    //   default:
-    //     throw new Error("Unsupported");
-    // }
-
-    // this.rebuildGameStateFromMoves(this.state.moves);
-    // for (let i = 0; i < this.startingPosition.length; i++) {
-    //   for (let j = 0; j < this.startingPosition[i].length; j++) {}
-    // }
   };
 
   // getFreshGameState(startingPosition: Position): {switch (move.moveType) {

@@ -223,7 +223,7 @@ class Pawn implements Piece {
     const { position } = game;
 
     const movedBefore = !!game.state.moves.find(
-      (m) => m.move.x === row && m.move.y === col
+      (m) => m.move.piece.uuid === game.position[row][col]?.uuid
     );
 
     console.log({ movedBefore });
