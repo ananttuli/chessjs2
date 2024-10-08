@@ -155,8 +155,8 @@ function findCapturablePiecesInDirection(
           moveType: MoveType.CAPTURE,
           piece,
           capturedPiece: pieceAtNewPos,
-          x: row,
-          y: col,
+          x: startRow,
+          y: startCol,
           toX: potentialMove[0],
           toY: potentialMove[1],
         });
